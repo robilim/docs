@@ -15,3 +15,44 @@ you are), you can manually delete the contents of `local/storage/framework/cache
 items. Clear this folder out, and the cache is gone.
 
 You can also clear the cache from the Control Panel by going to any settings area and hitting save.
+
+## Via API
+
+For cases where you might be running an Event Listener and need to trigger additional field updates to a newly created Entry, you could try running `Stache::update();`
+
+Example situation: After an entry is saved, set a custom_hidden_field if it hasn't been set already.
+
+```
+use Statamic\API\Stache;
+
+class YourListener extends Listener
+{
+    /**
+    * The events to be listened for, and the methods to call.
+    *
+    * @var array
+    */
+    public $events = [
+        EntrySaved::class => 'entrySaved'
+    ];
+    
+    public function entrySaved(EntrySaved $event) {
+        $data = $event->contextualData();
+        
+        if(!isset($data['custom_hidden_field']){
+        
+            //Remove cache incase we are running Entry::find on a new entry
+            $entry = Entry::find($data['id']);
+            if(!$entry){
+                Stache::update();
+            }
+
+            $entry = Entry::find($data['id']);
+            if($entry){
+                $entry->set('custom_hidden_field', 'custom-value');
+                $entry->save();
+            }
+        }
+    }
+}
+```
